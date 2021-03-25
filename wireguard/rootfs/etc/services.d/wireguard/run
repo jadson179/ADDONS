@@ -1,0 +1,72 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Home Assistant Community Add-on: WireGuard
+# Runs WireGuard
+# ==============================================================================
+declare interface
+declare api
+declare hostname
+declare address 
+declare token
+
+s6-svc -O /var/run/s6/services/wireguard
+
+bashio::log.info "Starting WireGuard..."
+
+# This is alpha software. We need to set this to instruct
+# WireGuard we are OK to go.
+export WG_I_PREFER_BUGGY_USERSPACE_TO_POLISHED_KMOD=1
+
+# Get the interface
+interface="wg0"
+if bashio::config.has_value "server.interface"; then
+    interface=$(bashio::config "server.interface")
+fi
+# Run the WireGuard
+if wg-quick up  "${interface}"; then 
+    echo "Success in active vpn"
+else 
+   wg-quick down "${interface}"
+   wg-quick up  "${interface}"
+fi 
+
+bashio::log.info "[unisec]: Provisioning node and service"
+token=$(bashio::config "token")
+api=$(bashio::config "api")
+responseInfoToken=$(curl -H "X-Consul-Token: ${token}" ${api}/v1/acl/token/self)
+address=$(echo ${responseInfoToken} | jq -r '.Description' | jq -r '.address' | cut -d "/" -f1)
+hostname=$(echo ${responseInfoToken} | jq -r '.AccessorID' | cut -c29-36)
+
+
+# Change hostname homeassistant
+curl 'http://supervisor/host/options' \
+  -H "authorization: Bearer ${SUPERVISOR_TOKEN}" \
+  -d '{"hostname":"'${hostname}'"}' 
+
+
+exec curl -X PUT \
+-H "X-Consul-Token: ${token}" \
+-d '{
+  "Node": "'${hostname}'",
+  "Address": "'${address}'",
+  "NodeMeta": {
+    "external-node": "true",
+    "external-probe": "true"
+  },
+  "Service": {
+    "ID": "'${hostname}'",
+    "Service": "'${hostname}'",
+    "Port": 8123
+  },
+  "Checks": [
+    {
+      "Name": "http-check",
+      "status": "passing",
+      "Definition": {
+        "http": "http://'${address}':8123",
+        "interval": "60s"
+      }
+    }
+  ]
+}' \
+${api}/v1/catalog/register 
