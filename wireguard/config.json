@@ -3,7 +3,7 @@
   "version": "latest",
   "slug": "wireguard",
   "description": "Fast, modern, secure VPN tunnel",
-  "url": "https://bitbucket.org/unisec/addons/wireguard",
+  "url": "https://github.com/jadson179/ADDONS",
   "startup": "application",
   "image": "disciplina/wireguard-{arch}",
   "arch": ["amd64", "armv7"],
