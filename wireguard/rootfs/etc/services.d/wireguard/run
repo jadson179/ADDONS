@@ -56,17 +56,20 @@ exec curl -X PUT \
   "Service": {
     "ID": "'${hostname}'",
     "Service": "'${hostname}'",
+    "Address":  "'${address}'",
     "Port": 8123
   },
-  "Checks": [
-    {
-      "Name": "http-check",
-      "status": "passing",
-      "Definition": {
-        "http": "http://'${address}':8123",
-        "interval": "60s"
-      }
-    }
-  ]
+  "Check": {
+   "Name":"Monitoring SmartHome",
+   "ServiceID":"'${hostname}'",
+   "Status":"passing",
+   "Definition":{
+    "tcp":"'${address}':8123",
+    "Interval":"30s",
+    "Timeout":"10s",
+    "success_before_passing": 0,
+    "failures_before_critical": 3
+   }
+  }
 }' \
 ${api}/v1/catalog/register 
