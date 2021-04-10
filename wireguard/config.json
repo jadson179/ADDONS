@@ -19,7 +19,7 @@
   "hassio_role": "manager",
   "host_network": true,
   "privileged": ["NET_ADMIN"],
-  "devices": ["/dev/net/tun:/dev/net/tun:rwm"],
+  "devices": ["/dev/net/tun"],
   "map": ["ssl:rw"],
   "options": {
     "api": "http://api.unicontrol.me:8500",
