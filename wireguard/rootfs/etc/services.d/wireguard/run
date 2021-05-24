@@ -36,6 +36,7 @@ api=$(bashio::config "api")
 responseInfoToken=$(curl -H "X-Consul-Token: ${token}" ${api}/v1/acl/token/self)
 address=$(echo ${responseInfoToken} | jq -r '.Description' | jq -r '.address' | cut -d "/" -f1)
 hostname=$(echo ${responseInfoToken} | jq -r '.AccessorID' | cut -c29-36)
+ip_lan=$(ha network info eth0 --raw-json | jq '.data.ipv4.address[0]')
 
 
 # Change hostname homeassistant
@@ -49,12 +50,21 @@ exec curl -X PUT \
 -d '{
   "Node": "'${hostname}'",
   "Address": "'${address}'",
+  "TaggedAddresses": {
+    "lan": "'$ip_lan'"
+  },
   "NodeMeta": {
     "external-node": "true",
     "external-probe": "true"
   },
   "Service": {
     "ID": "'${hostname}'",
+    "TaggedAddresses": {
+      "lan": {
+        "address": "'${ip_lan}'",
+        "port": 8123
+      }
+    },
     "Service": "'${hostname}'",
     "Address":  "'${address}'",
     "Port": 8123

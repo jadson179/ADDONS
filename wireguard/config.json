@@ -3,7 +3,7 @@
   "version": "latest",
   "slug": "wireguard",
   "description": "Fast, modern, secure VPN tunnel",
-  "url": "https://github.com/jadson179/ADDONS",
+  "url": "https://bitbucket.org/unisec/addons/wireguard",
   "startup": "application",
   "arch": ["aarch64", "amd64", "armhf", "armv7", "i386"],
   "init": false,
@@ -24,7 +24,7 @@
   "options": {
     "api": "!secret addon_wireguard_api",
     "token": "!secret addon_wireguard_token",
-    "server": { 
+    "server": {
       "host": "!secret addon_wireguard_server_host",
       "addresses": [],
       "dns": []
