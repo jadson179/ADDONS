@@ -51,7 +51,8 @@ exec curl -X PUT \
   "Node": "'${hostname}'",
   "Address": "'${address}'",
   "TaggedAddresses": {
-    "lan": "'$ip_lan'"
+    "lan": "'${ip_lan}'",
+    "wan": "'${address}'"
   },
   "NodeMeta": {
     "external-node": "true",
@@ -63,8 +64,16 @@ exec curl -X PUT \
       "lan": {
         "address": "'${ip_lan}'",
         "port": 8123
-      }
+      },
+      "wan": {
+        "address": "'${address}'",
+        "port": 8123
+      } 
     },
+    "Tags": [
+      "lan",
+      "wan",
+    ],
     "Service": "'${hostname}'",
     "Address":  "'${address}'",
     "Port": 8123
