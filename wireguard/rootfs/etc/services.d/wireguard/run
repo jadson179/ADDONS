@@ -91,14 +91,7 @@ curl 'http://supervisor/host/options' \
 
 register_service ${api} ${token} "lan" "lan_${hostname}" ${address} ${address_lan} '["'${hostname}'"]' 8123 "${hostname}:lan_${hostname}"
 register_service ${api} ${token} "wan" "wan_${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:wan_${hostname}"
-register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} "['www']" 8123 "www_${hostname}:${hostname}"
-
-
-{
-  echo 'register_service ${api} ${token} "lan" "lan_${hostname}" ${address} ${address_lan} '["'${hostname}'"]' 8123 "${hostname}:lan_${hostname}"'
-  echo 'register_service ${api} ${token} "wan" "wan_${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:wan_${hostname}"'
-  echo 'register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["www"]' 8123 "www_${hostname}:${hostname}"'
-}
+register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "www_${hostname}:${hostname}"
 
 exec echo "END:Publish Services"
 
