@@ -48,6 +48,34 @@ register_service () {
     local service_tag="$7"
     local service_port="$8"
     local check_name="$9"
+
+    echo  '{
+      "Node": "'${hostname}'",
+      "Address": "'${ip_node}'",
+      "NodeMeta": {
+        "external-node": "true",
+        "external-probe": "true"
+      },
+      "Service": {
+        "ID": "'${id_service}'",
+        "Service": "'${hostname}'",
+        "Tags": '${service_tag}',
+        "Address":  "'${ip_service}'",
+        "Port": '${service_port}'
+      },
+      "Check": {
+       "Name":"'${check_name}'",
+       "ServiceID":"'${id_service}'",
+       "Status":"passing",
+       "Definition":{
+        "tcp":"'${ip_service}':'${service_port}'",
+        "Interval":"30s",
+        "Timeout":"10s",
+        "success_before_passing": 0,
+        "failures_before_critical": 3
+       }
+      }
+    }'
     
 
     curl --silent -X PUT \
@@ -88,12 +116,12 @@ curl 'http://supervisor/host/options' \
   -H "authorization: Bearer ${SUPERVISOR_TOKEN}" \
   -d '{"hostname":"'${hostname}'"}' 
 
-echo "PUBLICNADO LAN"
+
 register_service ${api} ${token} "lan" "lan_${hostname}" ${address} ${address_lan} '["'${hostname}'"]' 8123 "${hostname}:lan_${hostname}"
-echo "PUBLICNADO WAN"
+
 register_service ${api} ${token} "wan" "wan_${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:wan_${hostname}"
-echo "PUBLICNADO GLOBAL"
-register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "www_${hostname}:${hostname}"
+
+register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:${hostname}"
 
 exec echo "END:Publish Services"
 
