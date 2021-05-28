@@ -132,17 +132,3 @@ exec echo "END:Publish Services"
 #}' \
 #${api}/v1/catalog/register 
 
-
-api: 'http://api.unicontrol.me:8500'
-token: d3ec8f28-ce29-47aa-b6c3-892bbf62b17e
-server:
-  host: 'vpn.unicontrol.me:10822'
-  addresses: []
-  dns: []
-peers:
-  - name: wg0
-    addresses:
-      - 0.0.0.0/24
-    allowed_ips:
-      - 10.2.0.0/24
-    client_allowed_ips: []
