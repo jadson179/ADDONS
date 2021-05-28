@@ -88,9 +88,11 @@ curl 'http://supervisor/host/options' \
   -H "authorization: Bearer ${SUPERVISOR_TOKEN}" \
   -d '{"hostname":"'${hostname}'"}' 
 
-
+echo "PUBLICNADO LAN"
 register_service ${api} ${token} "lan" "lan_${hostname}" ${address} ${address_lan} '["'${hostname}'"]' 8123 "${hostname}:lan_${hostname}"
+echo "PUBLICNADO WAN"
 register_service ${api} ${token} "wan" "wan_${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:wan_${hostname}"
+echo "PUBLICNADO GLOBAL"
 register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "www_${hostname}:${hostname}"
 
 exec echo "END:Publish Services"
