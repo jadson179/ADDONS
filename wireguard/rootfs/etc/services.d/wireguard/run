@@ -36,7 +36,51 @@ api=$(bashio::config "api")
 responseInfoToken=$(curl -H "X-Consul-Token: ${token}" ${api}/v1/acl/token/self)
 address=$(echo ${responseInfoToken} | jq -r '.Description' | jq -r '.address' | cut -d "/" -f1)
 hostname=$(echo ${responseInfoToken} | jq -r '.AccessorID' | cut -c29-36)
-ip_lan=$(curl --silent  -H "authorization: Bearer ${SUPERVISOR_TOKEN}" http://supervisor/network/info | jq '.data.interfaces[0].ipv4.address[0]')
+address_lan=$(curl --silent  -H "authorization: Bearer ${SUPERVISOR_TOKEN}" http://supervisor/network/info | jq '.data.interfaces[0].ipv4.address[0]')
+
+register_service () {
+    consul_api="$1"
+    token="$2"
+    hostname="$3"
+    id_service="$4"
+    ip_node="$5"
+    ip_service="$6"
+    service_tag="$7"
+    service_port="$8"
+    check_name="$9"
+    
+
+    curl --silent -X PUT \
+    -H "X-Consul-Token: ${token}" \
+    -d '{
+      "Node": "'${hostname}'",
+      "Address": "'${ip_node}'",
+      "NodeMeta": {
+        "external-node": "true",
+        "external-probe": "true"
+      },
+      "Service": {
+        "ID": "'${id_service}'",
+        "Service": "'${hostname}'",
+        "Tags": '${service_tag}',
+        "Address":  "'${ip_service}'",
+        "Port": '${service_port}'
+      },
+      "Check": {
+       "Name":"'${check_name}'",
+       "ServiceID":"'${id_service}'",
+       "Status":"passing",
+       "Definition":{
+        "tcp":"'${ip_service}':'${service_port}'",
+        "Interval":"30s",
+        "Timeout":"10s",
+        "success_before_passing": 0,
+        "failures_before_critical": 3
+       }
+      }
+    }'\
+    ${consul_api}/v1/catalog/register
+}
 
 
 # Change hostname homeassistant
@@ -45,50 +89,68 @@ curl 'http://supervisor/host/options' \
   -d '{"hostname":"'${hostname}'"}' 
 
 
-exec curl -X PUT \
--H "X-Consul-Token: ${token}" \
--d '{
-  "Node": "'${hostname}'",
-  "Address": "'${address}'",
-  "TaggedAddresses": {
-    "lan": "'${ip_lan}'",
-    "wan": "'${address}'"
-  },
-  "NodeMeta": {
-    "external-node": "true",
-    "external-probe": "true"
-  },
-  "Service": {
-    "ID": "'${hostname}'",
-    "TaggedAddresses": {
-      "lan": {
-        "address": "'${ip_lan}'",
-        "port": 8123
-      },
-      "wan": {
-        "address": "'${address}'",
-        "port": 8123
-      } 
-    },
-    "Tags": [
-      "lan",
-      "wan",
-    ],
-    "Service": "'${hostname}'",
-    "Address":  "'${address}'",
-    "Port": 8123
-  },
-  "Check": {
-   "Name":"Monitoring SmartHome",
-   "ServiceID":"'${hostname}'",
-   "Status":"passing",
-   "Definition":{
-    "tcp":"'${address}':8123",
-    "Interval":"30s",
-    "Timeout":"10s",
-    "success_before_passing": 0,
-    "failures_before_critical": 3
-   }
-  }
-}' \
-${api}/v1/catalog/register 
+register_service \
+  ${api} \
+  ${token} \ 
+  "lan" \
+  "lan_${hostname}" \
+  ${address} \
+  ${address_lan} \
+  '["'${hostname}'"]' \
+  8123 \
+  "${hostname}:lan_${hostname}"
+
+register_service \
+  ${api} \
+  ${token} \ 
+  "wan" \
+  "wan_${hostname}" \
+  ${address} \
+  ${address} \
+  '["'${hostname}'"]' \
+  8123 \
+  "${hostname}:wan_${hostname}"
+
+register_service \
+  ${api} \
+  ${token} \ 
+  "${hostname}" \
+  "${hostname}" \
+  ${address} \
+  ${address} \
+  '["www"]' \
+  8123 \
+  "www_${hostname}:${hostname}"
+
+
+exec echo "END:Publish Services"
+
+#exec curl -X PUT \
+#-H "X-Consul-Token: ${token}" \
+#-d '{
+#  "Node": "'${hostname}'",
+#  "Address": "'${address_lan}'",
+#  "NodeMeta": {
+#    "external-node": "true",
+#    "external-probe": "true"
+#  },
+#  "Service": {
+#    "ID": "'${hostname}'",
+#    "Service": "'${hostname}'",
+#    "Address":  "'${address}'",
+#    "Port": 8123
+#  },
+#  "Check": {
+#   "Name":"Monitoring SmartHome",
+#   "ServiceID":"'${hostname}'",
+#   "Status":"passing",
+#   "Definition":{
+#    "tcp":"'${address}':8123",
+#    "Interval":"30s",
+#    "Timeout":"10s",
+#    "success_before_passing": 0,
+#    "failures_before_critical": 3
+#   }
+#  }
+#}' \
+#${api}/v1/catalog/register 
