@@ -67,7 +67,7 @@ register_service () {
       },
       "Check": {
        "Name":"'${check_name}'",
-       "ServiceID":"'${id_service}'",
+       "ServiceID":"'${hostname}'-'${id_service}'",
        "Status":"passing",
        "Definition":{
         "tcp":"'${ip_service}':'${service_port}'",
