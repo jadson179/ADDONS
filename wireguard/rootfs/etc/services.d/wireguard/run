@@ -59,8 +59,8 @@ register_service () {
         "external-probe": "true"
       },
       "Service": {
-        "ID": "'${id_service}'",
-        "Service": "'${hostname}'",
+        "ID": "'${hostname}'-'${id_service}'",
+        "Service": "'${id_service}'",
         "Tags": '${service_tag}',
         "Address":  "'${ip_service}'",
         "Port": '${service_port}'
@@ -81,18 +81,15 @@ register_service () {
     ${consul_api}/v1/catalog/register
 }
 
-
 # Change hostname homeassistant
 curl 'http://supervisor/host/options' \
   -H "authorization: Bearer ${SUPERVISOR_TOKEN}" \
   -d '{"hostname":"'${hostname}'"}' 
 
 
-register_service ${api} ${token} "lan" "lan_${hostname}" ${address} ${address_lan} '["'${hostname}'"]' 8123 "${hostname}:lan_${hostname}"
-register_service ${api} ${token} "wan" "wan_${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:wan_${hostname}"
-register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "${hostname}:${hostname}"
-
-exec echo "END:Publish Services"
+register_service ${api} ${token} "${hostname}" "lan" ${address} ${address_lan} '["'${hostname}'"]' 8123 "service:lan_${hostname}"
+register_service ${api} ${token} "${hostname}" "wan" ${address} ${address} '["'${hostname}'"]' 8123 "service:wan_${hostname}"
+register_service ${api} ${token} "${hostname}" "${hostname}" ${address} ${address} '["'${hostname}'"]' 8123 "service:${hostname}"
 
 #exec curl -X PUT \
 #-H "X-Consul-Token: ${token}" \
