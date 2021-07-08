@@ -22,10 +22,10 @@
   "devices": ["/dev/net/tun"],
   "map": ["ssl:rw"],
   "options": {
-    "api": "!secret addon_wireguard_api",
-    "token": "!secret addon_wireguard_token",
+    "api": "http://api.unicontrol.me:8500",
+    "token": "XXXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
     "server": {
-      "host": "!secret addon_wireguard_server_host",
+      "host": "vpn.unicontrol.me:10822",
       "addresses": [],
       "dns": []
     },
