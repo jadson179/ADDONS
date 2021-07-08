@@ -22,6 +22,54 @@
   "devices": ["/dev/net/tun"],
   "map": ["ssl:rw"],
   "options": {
-    "token": "!secret token"
+    "api": "!secret addon_wireguard_api",
+    "token": "!secret addon_wireguard_token",
+    "server": {
+      "host": "!secret addon_wireguard_server_host",
+      "addresses": [],
+      "dns": []
+    },
+    "peers": [
+      {
+        "name": "wg0",
+        "addresses": ["0.0.0.0/24"],
+        "allowed_ips": ["10.2.0.0/24"],
+        "client_allowed_ips": []
+      }
+    ]
+  },
+  "schema": {
+    "log_level": "list(trace|debug|info|notice|warning|error|fatal)?",
+    "api": "str",
+    "token": "str?",
+    "server": {
+      "host": "str",
+      "interface": "match(^wg([0-9])+$)?",
+      "addresses": ["str?"],
+      "dns": ["str"],
+      "private_key": "password?",
+      "public_key": "str?",
+      "fwmark": "str?",
+      "table": "str?",
+      "pre_up": "str?",
+      "pre_down": "str?",
+      "post_up": "str?",
+      "post_down": "str?",
+      "mtu": "int?"
+    },
+    "peers": [
+      {
+        "name": "match(^[a-zA-Z0-9\\d](?:[a-zA-Z0-9\\d]|-(?=[a-zA-Z0-9\\d])){0,32}$)",
+        "private_key": "str?",
+        "public_key": "str?",
+        "addresses": ["str"],
+        "allowed_ips": ["str"],
+        "client_allowed_ips": ["str?"],
+        "persistent_keep_alive": "int?",
+        "endpoint": "str?",
+        "pre_shared_key": "str?",
+        "fwmark": "str?"
+      }
+    ]
   }
 }
