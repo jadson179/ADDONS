@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base/amd64:9.1.2
+ARG BUILD_FROM=ghcr.io/hassio-addons/base/amd64:10.0.0
 FROM ${BUILD_FROM}
 
 # Set shell
@@ -15,9 +15,9 @@ RUN \
         go \
         openresolv \
         libqrencode \
-        wireguard-tools=1.0.20200827-r1 \
+        wireguard-tools=1.0.20210424-r0 \ 
     \
-    && git clone --branch "0.0.20201118" --depth=1 \
+    && git clone --branch "0.0.20210424" --depth=1 \
         "https://git.zx2c4.com/wireguard-go" /tmp/wireguard \
     \
     && cd /tmp/wireguard \

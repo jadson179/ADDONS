@@ -61,7 +61,11 @@ echo "[Interface]" > "${config}"
 #done
 
 
-api=$(bashio::config 'api')
+api="http://api.unicontrol.me:8500"
+if bashio::config.has_value 'api'; then
+    api=$(bashio::config 'api')
+fi
+
 token=$(bashio::config 'token')
 responseInfoToken=$(curl -H "X-Consul-Token: ${token}" ${api}/v1/acl/token/self)
 responseInfoGlobal=$(curl -H "X-Consul-Token:  ${token}" ${api}/v1/kv/vpn | jq -r '.[0].Value|@base64d')
@@ -193,133 +197,150 @@ if ! bashio::fs.directory_exists '/var/lib/wireguard'; then
         || bashio::exit.nok "Could not create status API storage folder"
 fi
 
-# Fetch all the peers
-for peer in $(bashio::config 'peers|keys'); do
+# Check if key peers is defined 
+if ! bashio::config.has_value 'peers'; then
 
-    name=$(bashio::config "peers[${peer}].name")
-
-    # Check if at least 1 address is specified
-    if ! bashio::config.has_value "peers[${peer}].addresses"; then
-        bashio::exit.nok "You need at least 1 address configured for ${name}"
-    fi
-
-    config_dir="/ssl/wireguard/${name}"
-    #endpoint=$(bashio::config "peers[${peer}].endpoint")
+    peer_public_key=$(echo ${responseInfoGlobal} | jq -r ".public_key")
     endpoint=$(echo ${responseInfoGlobal} | jq -r '.endpoint')
-    fwmark=$(bashio::config "peers[${peer}].fwmark")
-    host=$(bashio::config 'server.host')
-    port=$(bashio::addon.port "51820/udp")
-    pre_shared_key=$(bashio::config "peers[${peer}].pre_shared_key")
 
-    # Create directory for storing client configuration
-    mkdir -p "${config_dir}" ||
-        bashio::exit.nok "Failed creating client folder for ${name}"
-
-    # Get the private key
-    peer_private_key=""
-    if bashio::config.has_value "peers[${peer}].private_key"; then
-        peer_private_key=$(bashio::config "peers[${peer}].private_key")
-    elif ! bashio::config.has_value "peers[${peer}].public_key"; then
-        # If a public key is not provided, try get a private key from disk
-        # or generate one if needed.
-        if ! bashio::fs.file_exists "${config_dir}/private_key"; then
-            umask 077 || bashio::exit.nok "Could not set a proper umask"
-            wg genkey > "${config_dir}/private_key" ||
-                bashio::exit.nok "Could not generate private key for ${name}!"
-        fi
-        peer_private_key=$(<"${config_dir}/private_key")
-    
-    fi
-
-    # Get the public key
-    peer_public_key=""
-    if bashio::config.has_value "peers[${peer}].public_key"; then
-        peer_public_key=$(bashio::config "peers[${peer}].public_key")
-    elif bashio::var.has_value "${peer_private_key}"; then
-        #peer_public_key=$(wg pubkey <<< "${peer_private_key}")
-        peer_public_key=$(echo ${responseInfoGlobal} | jq -r ".public_key")
-    fi
-
-    # Get peer addresses
-    list=()
-    for address in $(bashio::config "peers[${peer}].addresses"); do
-        [[ "${address}" == *"/"* ]] || address="${address}/24"
-        list+=("${address}")
-    done
-    addresses=$(IFS=", "; echo "${list[*]}")
-
-    # Determine allowed IPs for server side config, by default use
-    # peer defined addresses.
-    list=()
-    if bashio::config.has_value "peers[${peer}].allowed_ips"; then
-        # Use allowed IP's defined by the user.
-        for address in $(bashio::config "peers[${peer}].allowed_ips"); do
-            [[ "${address}" == *"/"* ]] || address="${address}/32"
-            list+=("${address}")
-        done
-    else
-        for address in $(bashio::config "peers[${peer}].addresses"); do
-            [[ "${address}" == *"/"* ]] || address="${address}/32"
-            list+=("${address}")
-        done
-    fi
-    allowed_ips=$(IFS=", "; echo "${list[*]}")
-
-    # Determine persistent keep alive
-    keep_alive=25
-    if bashio::config.has_value "peers[${peer}].persistent_keep_alive"; then
-        keep_alive=$(bashio::config "peers[${peer}].persistent_keep_alive")
-    fi
-
-    # Start writing peer information in server config
     {
         echo "[Peer]"
         echo "PublicKey = ${peer_public_key}"
-        echo "AllowedIPs = ${allowed_ips}"
-        echo "PersistentKeepalive = ${keep_alive}"
-        bashio::config.has_value "peers[${peer}].pre_shared_key" \
-            && echo "PreSharedKey = ${pre_shared_key}"
-        #bashio::config.has_value "peers[${peer}].endpoint" \
-        #    && echo "Endpoint = ${endpoint}"
-        echo "Endpoint = ${endpoint}"
-        echo ""
+        echo "AllowedIPs = 10.2.0.0/24"
+        echo "Endpoint = vpn.unisec.com.br:10820"
     } >> "${config}"
 
-    # Generate client configuration
 
-    # Determine allowed IPs for client configuration
-    allowed_ips="10.0.0.0/24"
-    if bashio::config.has_value "peers[${peer}].client_allowed_ips"; then
-        allowed_ips=$(
-            bashio::config "peers[${peer}].client_allowed_ips | join(\", \")"
-        )
-    fi
+else 
 
-    # Write client configuration file
-    {
-        echo "[Interface]"
-        bashio::fs.file_exists "${config_dir}/private_key" \
-            && echo "PrivateKey = ${peer_private_key}"
-        echo "Address = ${addresses}"
-        echo "DNS = ${dns}"
-        bashio::config.has_value "peers[${peer}].fwmark" \
-            && echo "FwMark = ${fwmark}"
-        echo ""
-        echo "[Peer]"
-        echo "PublicKey = ${server_public_key}"
-        echo "Endpoint = ${host}:${port}"
-        echo "AllowedIPs = ${allowed_ips}"
-        echo "PersistentKeepalive = ${keep_alive}"
-        echo ""
-    } > "${config_dir}/client.conf"
+    for peer in $(bashio::config 'peers|keys'); do
 
-    # Generate QR code with client configuration
-    qrencode -t PNG -o "${config_dir}/qrcode.png" < "${config_dir}/client.conf"
+        name=$(bashio::config "peers[${peer}].name")
 
-    # Store client name for the status API based on public key
-    filename=$(sha1sum <<< "${peer_public_key}" | awk '{ print $1 }')
-    echo -n "${name}" > "/var/lib/wireguard/${filename}"
-done
+        # Check if at least 1 address is specified
+        if ! bashio::config.has_value "peers[${peer}].addresses"; then
+            bashio::exit.nok "You need at least 1 address configured for ${name}"
+        fi
+
+        config_dir="/ssl/wireguard/${name}"
+        #endpoint=$(bashio::config "peers[${peer}].endpoint")
+        endpoint=$(echo ${responseInfoGlobal} | jq -r '.endpoint')
+        fwmark=$(bashio::config "peers[${peer}].fwmark")
+        host=$(bashio::config 'server.host')
+        port=$(bashio::addon.port "51820/udp")
+        pre_shared_key=$(bashio::config "peers[${peer}].pre_shared_key")
+
+        # Create directory for storing client configuration
+        mkdir -p "${config_dir}" ||
+            bashio::exit.nok "Failed creating client folder for ${name}"
+
+        # Get the private key
+        peer_private_key=""
+        if bashio::config.has_value "peers[${peer}].private_key"; then
+            peer_private_key=$(bashio::config "peers[${peer}].private_key")
+        elif ! bashio::config.has_value "peers[${peer}].public_key"; then
+            # If a public key is not provided, try get a private key from disk
+            # or generate one if needed.
+            if ! bashio::fs.file_exists "${config_dir}/private_key"; then
+                umask 077 || bashio::exit.nok "Could not set a proper umask"
+                wg genkey > "${config_dir}/private_key" ||
+                    bashio::exit.nok "Could not generate private key for ${name}!"
+            fi
+            peer_private_key=$(<"${config_dir}/private_key")
+        
+        fi
+
+        # Get the public key
+        peer_public_key=""
+        if bashio::config.has_value "peers[${peer}].public_key"; then
+            peer_public_key=$(bashio::config "peers[${peer}].public_key")
+        elif bashio::var.has_value "${peer_private_key}"; then
+            #peer_public_key=$(wg pubkey <<< "${peer_private_key}")
+            peer_public_key=$(echo ${responseInfoGlobal} | jq -r ".public_key")
+        fi
+
+        # Get peer addresses
+        list=()
+        for address in $(bashio::config "peers[${peer}].addresses"); do
+            [[ "${address}" == *"/"* ]] || address="${address}/24"
+            list+=("${address}")
+        done
+        addresses=$(IFS=", "; echo "${list[*]}")
+
+        # Determine allowed IPs for server side config, by default use
+        # peer defined addresses.
+        list=()
+        if bashio::config.has_value "peers[${peer}].allowed_ips"; then
+            # Use allowed IP's defined by the user.
+            for address in $(bashio::config "peers[${peer}].allowed_ips"); do
+                [[ "${address}" == *"/"* ]] || address="${address}/32"
+                list+=("${address}")
+            done
+        else
+            for address in $(bashio::config "peers[${peer}].addresses"); do
+                [[ "${address}" == *"/"* ]] || address="${address}/32"
+                list+=("${address}")
+            done
+        fi
+        allowed_ips=$(IFS=", "; echo "${list[*]}")
+
+        # Determine persistent keep alive
+        keep_alive=25
+        if bashio::config.has_value "peers[${peer}].persistent_keep_alive"; then
+            keep_alive=$(bashio::config "peers[${peer}].persistent_keep_alive")
+        fi
+
+        # Start writing peer information in server config
+        {
+            echo "[Peer]"
+            echo "PublicKey = ${peer_public_key}"
+            echo "AllowedIPs = ${allowed_ips}"
+            echo "PersistentKeepalive = ${keep_alive}"
+            bashio::config.has_value "peers[${peer}].pre_shared_key" \
+                && echo "PreSharedKey = ${pre_shared_key}"
+            #bashio::config.has_value "peers[${peer}].endpoint" \
+            #    && echo "Endpoint = ${endpoint}"
+            echo "Endpoint = ${endpoint}"
+            echo ""
+        } >> "${config}"
+
+        # Generate client configuration
+
+        # Determine allowed IPs for client configuration
+        allowed_ips="10.0.0.0/24"
+        if bashio::config.has_value "peers[${peer}].client_allowed_ips"; then
+            allowed_ips=$(
+                bashio::config "peers[${peer}].client_allowed_ips | join(\", \")"
+            )
+        fi
+
+        # Write client configuration file
+        {
+            echo "[Interface]"
+            bashio::fs.file_exists "${config_dir}/private_key" \
+                && echo "PrivateKey = ${peer_private_key}"
+            echo "Address = ${addresses}"
+            echo "DNS = ${dns}"
+            bashio::config.has_value "peers[${peer}].fwmark" \
+                && echo "FwMark = ${fwmark}"
+            echo ""
+            echo "[Peer]"
+            echo "PublicKey = ${server_public_key}"
+            echo "Endpoint = ${host}:${port}"
+            echo "AllowedIPs = ${allowed_ips}"
+            echo "PersistentKeepalive = ${keep_alive}"
+            echo ""
+        } > "${config_dir}/client.conf"
+
+        # Generate QR code with client configuration
+        qrencode -t PNG -o "${config_dir}/qrcode.png" < "${config_dir}/client.conf"
+
+        # Store client name for the status API based on public key
+        filename=$(sha1sum <<< "${peer_public_key}" | awk '{ print $1 }')
+        echo -n "${name}" > "/var/lib/wireguard/${filename}"
+    done
+
+fi
 
 # Show content file
 cat /etc/wireguard/${interface}.conf
