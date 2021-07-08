@@ -26,8 +26,8 @@
   },
   "schema": {
     "log_level": "list(trace|debug|info|notice|warning|error|fatal)?",
-    "api": "str",
-    "token": "str?",
+    "api": "str?",
+    "token": "str",
     "server": {
       "host": "str?",
       "interface": "match(^wg([0-9])+$)?",
