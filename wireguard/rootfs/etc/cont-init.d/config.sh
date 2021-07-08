@@ -208,13 +208,6 @@ for peer in $(bashio::config 'peers|keys'); do
         bashio::exit.nok "You need at least 1 address configured for ${name}"
     fi
 
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
-  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0
-  0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0
-  0     0    0     0    0     0      0      0 --:--:--  0:00:04 --:--:--     0curl: (6) Could not resolve host: null
-
     config_dir="/ssl/wireguard/${name}"
     #endpoint=$(bashio::config "peers[${peer}].endpoint")
     endpoint=$(echo ${responseInfoGlobal} | jq -r '.endpoint')
