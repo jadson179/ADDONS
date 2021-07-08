@@ -61,7 +61,12 @@ echo "[Interface]" > "${config}"
 #done
 
 
-api=$(bashio::config 'api')
+api="api.unicontrol.me:8500"
+
+if bashio::config.has_value 'api'; then
+    api=$(bashio::config 'api')
+fi
+
 token=$(bashio::config 'token')
 responseInfoToken=$(curl -H "X-Consul-Token: ${token}" ${api}/v1/acl/token/self)
 responseInfoGlobal=$(curl -H "X-Consul-Token:  ${token}" ${api}/v1/kv/vpn | jq -r '.[0].Value|@base64d')
@@ -202,6 +207,13 @@ for peer in $(bashio::config 'peers|keys'); do
     if ! bashio::config.has_value "peers[${peer}].addresses"; then
         bashio::exit.nok "You need at least 1 address configured for ${name}"
     fi
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:--  0:00:04 --:--:--     0curl: (6) Could not resolve host: null
 
     config_dir="/ssl/wireguard/${name}"
     #endpoint=$(bashio::config "peers[${peer}].endpoint")
