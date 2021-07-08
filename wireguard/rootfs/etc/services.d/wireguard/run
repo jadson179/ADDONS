@@ -26,6 +26,7 @@ fi
 if wg-quick up  "${interface}"; then 
   exec echo "Success in active vpn"
 else 
-   wg-quick down "${interface}"
-  exec wg-quick up  "${interface}"
+  wg-quick down "${interface}"
+  wg-quick up  "${interface}"
+  exec echo "Success in active vpn"
 fi 
