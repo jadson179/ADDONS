@@ -1,6 +1,6 @@
 {
   "name": "WireGuard",
-  "version": "latest",
+  "version": "1.0.0",
   "slug": "wireguard",
   "description": "Fast, modern, secure VPN tunnel",
   "url": "https://bitbucket.org/unisec/addons/wireguard",
