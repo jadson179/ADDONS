@@ -5,4 +5,5 @@
 # ==============================================================================
 sleep 30
 bashio::log.info "Requesting current status from WireGuard..."
+ping -c 1 10.2.0.254
 exec wg show
