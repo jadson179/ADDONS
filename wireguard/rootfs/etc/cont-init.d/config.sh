@@ -289,7 +289,7 @@ if bashio::config.has_value 'peers'; then
             echo "[Peer]"
             echo "PublicKey = ${peer_public_key}"
             echo "AllowedIPs = ${allowed_ips}"
-            echo "PersistentKeepalive = ${keep_alive}"
+            #echo "PersistentKeepalive = ${keep_alive}"
             bashio::config.has_value "peers[${peer}].pre_shared_key" \
                 && echo "PreSharedKey = ${pre_shared_key}"
             #bashio::config.has_value "peers[${peer}].endpoint" \
@@ -322,7 +322,7 @@ if bashio::config.has_value 'peers'; then
             echo "PublicKey = ${server_public_key}"
             echo "Endpoint = ${host}:${port}"
             echo "AllowedIPs = ${allowed_ips}"
-            echo "PersistentKeepalive = ${keep_alive}"
+            #echo "PersistentKeepalive = ${keep_alive}"
             echo ""
         } > "${config_dir}/client.conf"
 
@@ -343,7 +343,7 @@ else
         echo "[Peer]"
         echo "PublicKey = ${peer_public_key}"
         echo "AllowedIPs = 10.2.0.0/24"
-        echo "PersistentKeepalive = 25"
+        #echo "PersistentKeepalive = 25"
         echo "Endpoint = ${endpoint}"
         echo ""
     } >> "${config}"
